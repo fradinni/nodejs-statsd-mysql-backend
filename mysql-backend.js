@@ -7,8 +7,10 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-var _mysql = require('mysql');
-	
+var _mysql = require('mysql'),
+  _mysql_config = { pool_size: 5 }
+  _options = {}
+
 
 /**
  * Backend Constructor
@@ -18,12 +20,9 @@ var _mysql = require('mysql');
  * @param emmiter
  */
 function StatdMySQLBackend(startupTime, config, emitter) {
-	var self = this;
-
+  var self = this;
   this.config = config.mysql || {};
-
-  
-  // Verifying that the config file contains enough information for this backend to work	
+  // Verifying that the config file contains enough information for this backend to work  
   if(!this.config.host || !this.config.database || !this.config.user) {
     console.log("You need to specify at least host, port, database and user for this mysql backend");
     process.exit(-1);
@@ -33,49 +32,43 @@ function StatdMySQLBackend(startupTime, config, emitter) {
   if(!this.config.port) {
     this.config.port = 3306;
   }
-
   // Attach events
-	emitter.on('flush', self.onFlush );
-	emitter.on('status', self.onStatus );
-
-
-    /**
-   *
-   * @param time_stamp
-   * @param metrics
-   */
-  StatdMySQLBackend.prototype.onFlush = function(time_stamp, metrics) {
-
-    console.log("onFlush event Recieved");
-    //var self = this;
-    var connection = _mysql.createConnection(this.config);
-    connection.query('SELECT 1', function(err, rows) {
-      if(!err) {
-        console.log("DB connected");
-      }
-      else {
-        console.log("there was an error while trying to connect to DB, please check");
-      }
-    // connected! (unless `err` is set)
-    });
-  }
-
-
-  /**
-   *
-   * @param error
-   * @param backend_name
-   * @param stat_name
-   * @param stat_value
-   */
-  StatdMySQLBackend.prototype.onStatus = function(error, backend_name, stat_name, stat_value) {
-    console.log("onStatus event Recieved");
-  }
-
+  emitter.on('flush', function(time_stamp, metrics) { self.onFlush(time_stamp, metrics); } );
+  emitter.on('status', self.onStatus );
 }
 
 
+/**
+ *
+ * @param time_stamp
+ * @param metrics
+ */
+StatdMySQLBackend.prototype.onFlush = function(time_stamp, metrics) {
+  console.log("onFlush event Recieved host : " + this.config.host);
+  //var self = this;
+  /*var connection = _mysql.createConnection(config);
+  connection.query('SELECT 1', function(err, rows) {
+    if(!err) {
+      console.log("DB connected");
+    }
+    else {
+      console.log("there was an error while trying to connect to DB, please check");
+    }
+  // connected! (unless `err` is set)
+  });*/
+}
 
+
+/**
+ *
+ * @param error
+ * @param backend_name
+ * @param stat_name
+ * @param stat_value
+ */
+StatdMySQLBackend.prototype.onStatus = function(error, backend_name, stat_name, stat_value) {
+
+}
 
 
 
@@ -83,10 +76,6 @@ exports.init = function(startupTime, config, events) {
   var instance = new StatdMySQLBackend(startupTime, config, events);
   return true;
 };
-
-
-
-
 
 /*
  * Backend example : repeater.js
@@ -122,3 +111,5 @@ exports.init = function(startupTime, config, events) {
   return true;
 };
 */
+
+
