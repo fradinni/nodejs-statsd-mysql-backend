@@ -51,13 +51,14 @@ StatdMySQLBackend.prototype.onFlush = function(time_stamp, metrics) {
   var sets = metrics['sets'];
   var pctThreshold = metrics['pctThreshold'];
 
-  self.executeQuery("toto");
+  self.handleCounters(counters,time_stamp);
   
 }
 
 
 StatdMySQLBackend.prototype.handleCounters = function(_counters, time_stamp) {
-  var queries = [];
+  var self = this;
+  var querries = [];
   var value = 0;
   for(var counter in _counters) {
     value = counters[counter];
@@ -65,13 +66,14 @@ StatdMySQLBackend.prototype.handleCounters = function(_counters, time_stamp) {
       continue;
     }
     else {
-      queries.push("insert into statistics values(" + time_stamp + ",'" + counter +"'," + value + ") on duplicate key value = value + " + value + ", timestamp = " + time_stamp);
+      querries.push("insert into statistics values(" + time_stamp + ",'" + counter +"'," + value + ") on duplicate key value = value + " + value + ", timestamp = " + time_stamp);
     }
   }
+  self.executeQuerries(querries);
 }
 
 
-StatdMySQLBackend.prototype.executeQuery = function(sqlQuerries) {
+StatdMySQLBackend.prototype.executeQuerries = function(sqlQuerries) {
 
   // Let's create a connection to the DB server
   var connection = _mysql.createConnection(this.config);
