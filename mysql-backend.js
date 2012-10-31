@@ -43,14 +43,19 @@ function StatdMySQLBackend(startupTime, config, emitter) {
  * @param metrics
  */
 StatdMySQLBackend.prototype.onFlush = function(time_stamp, metrics) {
+  var self = this;
 
-  for (var metric in metrics['counters']) {
-      console.log("inspecting metric : " + util.inspect(metric));
-      console.log("inspecting metrics[metric] : " + util.inspect(metrics[metric]));
-    }
+  var counters = metrics['counters'];
+  var timers = metrics['timers'];  
+  var gauges = metrics['gauges'];
+  var sets = metrics['sets'];
+  var pctThreshold = metrics['pctThreshold'];
+  self.executeQuery("toto");
+  
+}
 
+StatdMySQLBackend.prototype.executeQuery = function(sql) {
 
-  //console.log("onFlush event Recieved host : ");
   var connection = _mysql.createConnection(this.config);
 
   connection.query('SELECT 1', function(err, rows) {
@@ -67,8 +72,6 @@ StatdMySQLBackend.prototype.onFlush = function(time_stamp, metrics) {
     }
   });
 }
-
-
 /**
  *
  * @param error
