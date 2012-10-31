@@ -21,6 +21,7 @@ function StatdMySQLBackend(startupTime, config, emitter) {
 	var self = this;
 
   this.config = config.mysql || {};
+
   
   // Verifying that the config file contains enough information for this backend to work	
   if(!this.config.host || !this.config.database || !this.config.user) {
@@ -34,7 +35,7 @@ function StatdMySQLBackend(startupTime, config, emitter) {
   }
 
   // Attach events
-	emitter.on('flush', self.onFlush );
+	emitter.on('flush', function(time_stamp, metrics) {self.onFlush(time_stamp, metrics, this.config)} );
 	emitter.on('status', self.onStatus );
 }
 
@@ -44,11 +45,11 @@ function StatdMySQLBackend(startupTime, config, emitter) {
  * @param time_stamp
  * @param metrics
  */
-StatdMySQLBackend.prototype.onFlush = function(time_stamp, metrics) {
+StatdMySQLBackend.prototype.onFlush = function(time_stamp, metrics, config) {
 
   console.log("onFlush event Recieved");
-  var self = this;
-  var connection = _mysql.createConnection(self.config);
+  //var self = this;
+  var connection = _mysql.createConnection(config);
   connection.query('SELECT 1', function(err, rows) {
     if(!err) {
       console.log("DB connected");
