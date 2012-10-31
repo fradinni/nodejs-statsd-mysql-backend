@@ -93,8 +93,9 @@ StatdMySQLBackend.prototype.executeQuery = function(sqlQuerries) {
         });  
       }
     }
-  }
-});
+  });
+}
+
 
 
   
