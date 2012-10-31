@@ -61,7 +61,7 @@ StatdMySQLBackend.prototype.handleCounters = function(_counters, time_stamp) {
   var querries = [];
   var value = 0;
   for(var counter in _counters) {
-    value = counters[counter];
+    value = _counters[counter];
     if(value === 0) {
       continue;
     }
@@ -83,14 +83,14 @@ StatdMySQLBackend.prototype.executeQuerries = function(sqlQuerries) {
       console.log("There was an error while trying to connect to DB, please check");
     }
     else {
-      for(var sql in sqlQuerries){
-        connection.query(sql, function(err, rows) {
+      for(var i = 0 ; i < sqlQuerries.length ; i++){
+        connection.query(sqlQuerries[i], function(err, rows) {
           if(!err) {
             console.log("Query succesfully executed");
           }
           else {
             //TODO : add better error handling code
-            console.log("Error while executing sql query : " + sql); 
+            console.log("Error while executing sql query : " + sqlQuerries[i]); 
           }
         });  
       }
