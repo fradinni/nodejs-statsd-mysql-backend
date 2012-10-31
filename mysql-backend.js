@@ -35,43 +35,47 @@ function StatdMySQLBackend(startupTime, config, emitter) {
   }
 
   // Attach events
-	emitter.on('flush', function(time_stamp, metrics) {self.onFlush(time_stamp, metrics, this.config)} );
+	emitter.on('flush', self.onFlush );
 	emitter.on('status', self.onStatus );
+
+
+    /**
+   *
+   * @param time_stamp
+   * @param metrics
+   */
+  StatdMySQLBackend.prototype.onFlush = function(time_stamp, metrics) {
+
+    console.log("onFlush event Recieved");
+    //var self = this;
+    var connection = _mysql.createConnection(this.config);
+    connection.query('SELECT 1', function(err, rows) {
+      if(!err) {
+        console.log("DB connected");
+      }
+      else {
+        console.log("there was an error while trying to connect to DB, please check");
+      }
+    // connected! (unless `err` is set)
+    });
+  }
+
+
+  /**
+   *
+   * @param error
+   * @param backend_name
+   * @param stat_name
+   * @param stat_value
+   */
+  StatdMySQLBackend.prototype.onStatus = function(error, backend_name, stat_name, stat_value) {
+    console.log("onStatus event Recieved");
+  }
+
 }
 
 
-/**
- *
- * @param time_stamp
- * @param metrics
- */
-StatdMySQLBackend.prototype.onFlush = function(time_stamp, metrics, config) {
 
-  console.log("onFlush event Recieved");
-  //var self = this;
-  var connection = _mysql.createConnection(config);
-  connection.query('SELECT 1', function(err, rows) {
-    if(!err) {
-      console.log("DB connected");
-    }
-    else {
-      console.log("there was an error while trying to connect to DB, please check");
-    }
-  // connected! (unless `err` is set)
-  });
-}
-
-
-/**
- *
- * @param error
- * @param backend_name
- * @param stat_name
- * @param stat_value
- */
-StatdMySQLBackend.prototype.onStatus = function(error, backend_name, stat_name, stat_value) {
-  console.log("onStatus event Recieved");
-}
 
 
 
