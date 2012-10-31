@@ -7,9 +7,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-var _mysql = require('mysql'),
-  _mysql_config = { pool_size: 5 }
-  _options = {}
+var _mysql = require('mysql');
 
 
 /**
@@ -44,9 +42,10 @@ function StatdMySQLBackend(startupTime, config, emitter) {
  * @param metrics
  */
 StatdMySQLBackend.prototype.onFlush = function(time_stamp, metrics) {
-  console.log("onFlush event Recieved host : " + this.config.host);
-  //var self = this;
-  /*var connection = _mysql.createConnection(config);
+
+  //console.log("onFlush event Recieved host : ");
+  var connection = _mysql.createConnection(config);
+
   connection.query('SELECT 1', function(err, rows) {
     if(!err) {
       console.log("DB connected");
@@ -54,8 +53,7 @@ StatdMySQLBackend.prototype.onFlush = function(time_stamp, metrics) {
     else {
       console.log("there was an error while trying to connect to DB, please check");
     }
-  // connected! (unless `err` is set)
-  });*/
+  });
 }
 
 
