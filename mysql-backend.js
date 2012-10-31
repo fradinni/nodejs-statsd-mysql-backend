@@ -66,7 +66,7 @@ StatdMySQLBackend.prototype.handleCounters = function(_counters, time_stamp) {
       continue;
     }
     else {
-      querries.push("insert into statistics('timestamp','name','value') values(" + time_stamp + ",'" + counter +"'," + value + ") on duplicate key update value = value + " + value + ", timestamp = " + time_stamp);
+      querries.push("insert into `statistics` (`timestamp`,`name`,`value`) values(" + time_stamp + ",'" + counter +"'," + value + ") on duplicate key update value = value + " + value + ", timestamp = " + time_stamp);
     }
   }
   self.executeQuerries(querries);
