@@ -44,7 +44,7 @@ function StatdMySQLBackend(startupTime, config, emitter) {
 StatdMySQLBackend.prototype.onFlush = function(time_stamp, metrics) {
 
   //console.log("onFlush event Recieved host : ");
-  var connection = _mysql.createConnection(config);
+  var connection = _mysql.createConnection(this.config);
 
   connection.query('SELECT 1', function(err, rows) {
     if(!err) {
