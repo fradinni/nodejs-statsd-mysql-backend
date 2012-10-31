@@ -21,12 +21,20 @@ var _mysql = require('mysql'),
  */
 function StatdMySQLBackend(startupTime, config, emitter) {
 	var self = this;
-	this.config = config.mysql || {};
+
+  this.config = config.mysql || {};
+  
   // Verifying that the config file contains enough information for this backend to work	
-  if(!this.config.host || !this.config.port || !this.config.database || !this.config.user) {
+  if(!this.config.host || !this.config.database || !this.config.user) {
     console.log("You need to specify at least host, port, database and user for this mysql backend");
     process.exit(-1);
   }
+
+  // Default port for mysql is 3306, if unset in conf file, we set it here to default
+  if(!this.config.port) {
+    this.config.port = 3306;
+  }
+  
   // Attach events
 	emitter.on('flush', self.onFlush );
 	emitter.on('status', self.onStatus );
@@ -40,6 +48,16 @@ function StatdMySQLBackend(startupTime, config, emitter) {
  */
 StatdMySQLBackend.prototype.onFlush = function(time_stamp, metrics) {
   console.log("onFlush event Recieved");
+  var connection = _mysql.createConnection(self.config);
+  connection.query('SELECT 1', function(err, rows) {
+    if(!err) {
+      console.log("DB connected");
+    }
+    else {
+      console.log("there was an error while trying to connect to DB, please check");
+    }
+  // connected! (unless `err` is set)
+  });
 }
 
 
@@ -60,6 +78,10 @@ exports.init = function(startupTime, config, events) {
   var instance = new StatdMySQLBackend(startupTime, config, events);
   return true;
 };
+
+
+
+
 
 /*
  * Backend example : repeater.js
