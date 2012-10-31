@@ -45,8 +45,10 @@ function StatdMySQLBackend(startupTime, config, emitter) {
  * @param metrics
  */
 StatdMySQLBackend.prototype.onFlush = function(time_stamp, metrics) {
+
   console.log("onFlush event Recieved");
-  var connection = _mysql.createConnection(this.config);
+  var self = this;
+  var connection = _mysql.createConnection(self.config);
   connection.query('SELECT 1', function(err, rows) {
     if(!err) {
       console.log("DB connected");
