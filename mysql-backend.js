@@ -91,18 +91,17 @@ StatdMySQLBackend.prototype.executeQuerries = function(sqlQuerries) {
           }
           else {
             //TODO : add better error handling code
-            console.log("Error while executing sql query : " + sqlQuerries[i]); 
+            console.log("Error while executing sql query"); 
           }
+          connection.end(function(err) {
+            if(err){
+              console.log("There was an error while trying to close DB connection");
+              //Let's make sure that socket is destroyed
+              connection.destroy();
+            }
+          });
         });  
       }
-    }
-  });
- 
-  connection.end(function(err) {
-    if(err){
-      console.log("There was an error while trying to close DB connection");
-      //Let's make sure that socket is destroyed
-      connection.destroy();
     }
   });
 }
