@@ -7,7 +7,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-var _mysql = require('mysql');
+var _mysql = require('mysql'),
+    _util = require('util');
 
 
 /**
@@ -43,6 +44,12 @@ function StatdMySQLBackend(startupTime, config, emitter) {
  */
 StatdMySQLBackend.prototype.onFlush = function(time_stamp, metrics) {
 
+  for (var metric in metrics['counters']) {
+      console.log("inspecting metric : " + util.inspect(metric));
+      console.log("inspecting metrics[metric] : " + util.inspect(metrics[metric]));
+    }
+
+
   //console.log("onFlush event Recieved host : ");
   var connection = _mysql.createConnection(this.config);
 
@@ -51,7 +58,12 @@ StatdMySQLBackend.prototype.onFlush = function(time_stamp, metrics) {
       console.log("DB connected");
     }
     else {
-      console.log("there was an error while trying to connect to DB, please check");
+      console.log("There was an error while trying to connect to DB, please check");
+    }
+  });
+  connection.end(function(err) {
+    if(err){
+      console.log("There was an error while trying to close DB connection");
     }
   });
 }
