@@ -66,7 +66,7 @@ StatdMySQLBackend.prototype.handleCounters = function(_counters, time_stamp) {
       continue;
     }
     else {
-      querries.push("insert into statistics values(" + time_stamp + ",'" + counter +"'," + value + ") on duplicate key value = value + " + value + ", timestamp = " + time_stamp);
+      querries.push("insert into statistics('timestamp','name','value') values(" + time_stamp + ",'" + counter +"'," + value + ") on duplicate key value = value + " + value + ", timestamp = " + time_stamp);
     }
   }
   self.executeQuerries(querries);
@@ -84,6 +84,7 @@ StatdMySQLBackend.prototype.executeQuerries = function(sqlQuerries) {
     }
     else {
       for(var i = 0 ; i < sqlQuerries.length ; i++){
+        console.log("trying to execute : " + sqlQuerries[i]);
         connection.query(sqlQuerries[i], function(err, rows) {
           if(!err) {
             console.log("Query succesfully executed");
