@@ -94,11 +94,7 @@ StatdMySQLBackend.prototype.executeQuery = function(sqlQuerries) {
       }
     }
   });
-}
-
-
-
-  
+ 
   connection.end(function(err) {
     if(err){
       console.log("There was an error while trying to close DB connection");
