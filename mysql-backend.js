@@ -21,8 +21,13 @@ var _mysql = require('mysql'),
  */
 function StatdMySQLBackend(startupTime, config, emitter) {
 	var self = this;
-	
-	// Attach events
+	this.config = config.mysql || {};
+  // Verifying that the config file contains enough information for this backend to work
+	if(this.config.host === "undefined" || this.config.port === "undefined" || this.config.database === "undefined" || this.config.user === "undefined") {
+    console.log("You need to specify at least Host, Port and Database for the mysql backend");
+    return;
+  }
+  // Attach events
 	emitter.on('flush', self.onFlush );
 	emitter.on('status', self.onStatus );
 }
@@ -34,7 +39,7 @@ function StatdMySQLBackend(startupTime, config, emitter) {
  * @param metrics
  */
 StatdMySQLBackend.prototype.onFlush = function(time_stamp, metrics) {
-
+  console.log("onFlush event Recieved");
 }
 
 
@@ -46,7 +51,7 @@ StatdMySQLBackend.prototype.onFlush = function(time_stamp, metrics) {
  * @param stat_value
  */
 StatdMySQLBackend.prototype.onStatus = function(error, backend_name, stat_name, stat_value) {
-
+  console.log("onStatus event Recieved");
 }
 
 
