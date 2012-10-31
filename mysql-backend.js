@@ -22,10 +22,10 @@ var _mysql = require('mysql'),
 function StatdMySQLBackend(startupTime, config, emitter) {
 	var self = this;
 	this.config = config.mysql || {};
-  // Verifying that the config file contains enough information for this backend to work
-	if(this.config.host === "undefined" || this.config.port === "undefined" || this.config.database === "undefined" || this.config.user === "undefined") {
-    console.log("You need to specify at least Host, Port and Database for the mysql backend");
-    return;
+  // Verifying that the config file contains enough information for this backend to work	
+  if(!this.config.host || !this.config.port || !this.config.database || !this.config.user) {
+    console.log("You need to specify at least host, port, database and user for this mysql backend");
+    process.exit(-1);
   }
   // Attach events
 	emitter.on('flush', self.onFlush );
