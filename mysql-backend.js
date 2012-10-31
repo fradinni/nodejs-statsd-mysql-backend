@@ -7,9 +7,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////
 
-var _mysql = require('mysql'),
-	_mysql_config = { pool_size: 5 }
-	_options = {}
+var _mysql = require('mysql');
 	
 
 /**
@@ -34,7 +32,7 @@ function StatdMySQLBackend(startupTime, config, emitter) {
   if(!this.config.port) {
     this.config.port = 3306;
   }
-  
+
   // Attach events
 	emitter.on('flush', self.onFlush );
 	emitter.on('status', self.onStatus );
@@ -48,7 +46,7 @@ function StatdMySQLBackend(startupTime, config, emitter) {
  */
 StatdMySQLBackend.prototype.onFlush = function(time_stamp, metrics) {
   console.log("onFlush event Recieved");
-  var connection = _mysql.createConnection(self.config);
+  var connection = _mysql.createConnection(this.config);
   connection.query('SELECT 1', function(err, rows) {
     if(!err) {
       console.log("DB connected");
