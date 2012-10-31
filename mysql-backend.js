@@ -50,25 +50,59 @@ StatdMySQLBackend.prototype.onFlush = function(time_stamp, metrics) {
   var gauges = metrics['gauges'];
   var sets = metrics['sets'];
   var pctThreshold = metrics['pctThreshold'];
+
   self.executeQuery("toto");
   
 }
 
-StatdMySQLBackend.prototype.executeQuery = function(sql) {
 
-  var connection = _mysql.createConnection(this.config);
-
-  connection.query('SELECT 1', function(err, rows) {
-    if(!err) {
-      console.log("DB connected");
+StatdMySQLBackend.prototype.handleCounters = function(_counters, time_stamp) {
+  var queries = [];
+  var value = 0;
+  for(var counter in _counters) {
+    value = counters[counter];
+    if(value === 0) {
+      continue;
     }
     else {
+      queries.push("insert into statistics values(" + time_stamp + ",'" + counter +"'," + value + ") on duplicate key value = value + " + value + ", timestamp = " + time_stamp);
+    }
+  }
+}
+
+
+StatdMySQLBackend.prototype.executeQuery = function(sqlQuerries) {
+
+  // Let's create a connection to the DB server
+  var connection = _mysql.createConnection(this.config);
+  
+  connection.connect(function(err){
+    if(err){
       console.log("There was an error while trying to connect to DB, please check");
     }
+    else {
+      for(var sql in sqlQuerries){
+        connection.query(sql, function(err, rows) {
+          if(!err) {
+            console.log("Query succesfully executed");
+          }
+          else {
+            //TODO : add better error handling code
+            console.log("Error while executing sql query : " + sql); 
+          }  
+        }
+      }
+    }
   });
+});
+
+
+  
   connection.end(function(err) {
     if(err){
       console.log("There was an error while trying to close DB connection");
+      //Let's make sure that socket is destroyed
+      connection.destroy();
     }
   });
 }
