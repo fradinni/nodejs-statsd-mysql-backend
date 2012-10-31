@@ -8,9 +8,8 @@
 ///////////////////////////////////////////////////////////////////////////////////
 
 var _mysql = require('mysql'),
-	_mysql_config = { pool_size: 5 }
-	_options = {}
-	
+    util = require('util');
+
 
 /**
  * Backend Constructor
@@ -20,11 +19,21 @@ var _mysql = require('mysql'),
  * @param emmiter
  */
 function StatdMySQLBackend(startupTime, config, emitter) {
-	var self = this;
-	
-	// Attach events
-	emitter.on('flush', self.onFlush );
-	emitter.on('status', self.onStatus );
+  var self = this;
+  this.config = config.mysql || {};
+  // Verifying that the config file contains enough information for this backend to work  
+  if(!this.config.host || !this.config.database || !this.config.user) {
+    console.log("You need to specify at least host, port, database and user for this mysql backend");
+    process.exit(-1);
+  }
+
+  // Default port for mysql is 3306, if unset in conf file, we set it here to default
+  if(!this.config.port) {
+    this.config.port = 3306;
+  }
+  // Attach events
+  emitter.on('flush', function(time_stamp, metrics) { self.onFlush(time_stamp, metrics); } );
+  emitter.on('status', self.onStatus );
 }
 
 
@@ -34,10 +43,69 @@ function StatdMySQLBackend(startupTime, config, emitter) {
  * @param metrics
  */
 StatdMySQLBackend.prototype.onFlush = function(time_stamp, metrics) {
+  var self = this;
 
+  var counters = metrics['counters'];
+  var timers = metrics['timers'];  
+  var gauges = metrics['gauges'];
+  var sets = metrics['sets'];
+  var pctThreshold = metrics['pctThreshold'];
+
+  self.handleCounters(counters,time_stamp);
+  
 }
 
 
+StatdMySQLBackend.prototype.handleCounters = function(_counters, time_stamp) {
+  var self = this;
+  var querries = [];
+  var value = 0;
+  for(var counter in _counters) {
+    value = _counters[counter];
+    if(value === 0) {
+      continue;
+    }
+    else {
+      querries.push("insert into `statistics` (`timestamp`,`name`,`value`) values(" + time_stamp + ",'" + counter +"'," + value + ") on duplicate key update value = value + " + value + ", timestamp = " + time_stamp);
+    }
+  }
+  self.executeQuerries(querries);
+}
+
+
+StatdMySQLBackend.prototype.executeQuerries = function(sqlQuerries) {
+
+  // Let's create a connection to the DB server
+  var connection = _mysql.createConnection(this.config);
+  
+  connection.connect(function(err){
+    if(err){
+      console.log("There was an error while trying to connect to DB, please check");
+    }
+    else {
+      for(var i = 0 ; i < sqlQuerries.length ; i++){
+        console.log("trying to execute : " + sqlQuerries[i]);
+        connection.query(sqlQuerries[i], function(err, rows) {
+          if(!err) {
+            console.log("Query succesfully executed");
+          }
+          else {
+            //TODO : add better error handling code
+            console.log("Error while executing sql query : " + sqlQuerries[i]); 
+          }
+        });  
+      }
+    }
+  });
+ 
+  connection.end(function(err) {
+    if(err){
+      console.log("There was an error while trying to close DB connection");
+      //Let's make sure that socket is destroyed
+      connection.destroy();
+    }
+  });
+}
 /**
  *
  * @param error
@@ -90,3 +158,5 @@ exports.init = function(startupTime, config, events) {
   return true;
 };
 */
+
+
