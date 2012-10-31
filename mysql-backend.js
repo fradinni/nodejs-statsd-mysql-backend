@@ -89,11 +89,11 @@ StatdMySQLBackend.prototype.executeQuery = function(sqlQuerries) {
           else {
             //TODO : add better error handling code
             console.log("Error while executing sql query : " + sql); 
-          }  
-        }
+          }
+        });  
       }
     }
-  });
+  }
 });
 
 
