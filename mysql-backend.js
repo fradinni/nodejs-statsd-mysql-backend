@@ -102,6 +102,7 @@ StatdMySQLBackend.prototype.onFlush = function(time_stamp, metrics) {
 }
 
 
+
 /**
  * Handle and process received counters 
  * 
@@ -171,11 +172,11 @@ StatdMySQLBackend.prototype.executeQuerries = function(sqlQuerries) {
     console.log("Query " + i + " : " + sqlQuerries[i]);
     self.sqlConnection.query(sqlQuerries[i], function(err, rows) {
       if(!err) {
-        console.log("Query " + i + " [SUCCESS]");
+        console.log(" -> Query [SUCCESS]");
       }
       else {
         //TODO : add better error handling code
-        console.log("Query " + i + " [ERROR]"); 
+        console.log(" -> Query [ERROR]"); 
       }
     });  
   }
