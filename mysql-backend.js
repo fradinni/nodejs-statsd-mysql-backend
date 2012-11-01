@@ -9,16 +9,25 @@
 
 var _mysql = require('mysql'),
     util = require('util'),
-    events = require('events');
+    fs = require('fs');
 
 var STATSD_PACKETS_RECEIVED = "statsd.packets_received";
 var STATSD_BAD_LINES = "statsd.bad_lines_seen";
 
 
-var engineEvents = new events.EventEmitter();
-
 /**
  * Backend Constructor
+ *
+ * Example config :
+ *
+  mysql: { 
+   host: "localhost", 
+   port: 3306, 
+   user: "root", 
+   password: "root", 
+   database: "statsd_db",
+   tables: ["statsd_users", "statsd_statistics"]
+  }
  *
  * @param startupTime
  * @param config
@@ -40,15 +49,32 @@ function StatdMySQLBackend(startupTime, config, emitter) {
     this.config.port = 3306;
   }
 
+  // Set backend path
+  for(var backend_index in config.backends) {
+    var currentBackend = config.backends[backend_index];
+    if(currentBackend.indexOf('mysql-backend.js') > -1) {
+      self.config.backendPath = currentBackend.substring(0, currentBackend.lastIndexOf('/')+1);
+    }
+  }
+
+  //Default tables
+  if(!this.config.tables) {
+    this.config.tables = ["statistics"];
+  }
+
   // Default engines
   if(!self.config.engines) {
     self.config.engines = {};
     self.config.engines.countersEngine = "./countersEngine.js";
   }
   
+
+  // Check if tables exists
+  self.checkDatabase();
+
   // Load backend engines
   self.loadEngines();
- 
+
   // Attach events
   emitter.on('flush', function(time_stamp, metrics) { self.onFlush(time_stamp, metrics); } );
   emitter.on('status', self.onStatus );
@@ -110,6 +136,66 @@ StatdMySQLBackend.prototype.closeMySqlConnection = function() {
 
 
 
+/**
+ *
+ *
+ */
+StatdMySQLBackend.prototype.checkDatabase = function(callback) {
+  var self = this;
+
+  var isConnected = self.openMySqlConnection();
+  if(!isConnected) {
+    console.log("Unable to connect to MySQL database ! Please check...");
+    process.exit(-1);
+  }
+
+  // Check if tables exists
+  for(var table_index in self.config.tables) {
+    var table_name = self.config.tables[table_index];
+    console.log("Check if table exists : '" + table_name + "'");
+    self.sqlConnection.query('show tables like "'+table_name+'";', function(err, results, fields) {
+      if(err) {
+        console.log("Unbale to execute query !");
+        process.exit(-1);
+      }
+
+      // If table doesn't exists
+      if(results.length > 0) {
+        console.log("Table '" + table_name + "' was found !");
+        if(table_index == self.config.tables.length-1) {
+          console.log("-- MySQL Backend is ready !");
+        }
+      } else {
+        console.log("Table '" + table_name + "' was not found !");
+
+        // Try to read SQL file for this table
+        var sqlFilePath = self.config.backendPath + 'tables/' + table_name + '.sql';
+        fs.readFile(sqlFilePath, 'utf8', function (err,data) {
+          if (err) {
+            console.log("Unable to read file: '" + sqlFilePath + "' ! Exit...");
+            process.exit(-1);
+          }
+          
+          self.sqlConnection.query(data, function(err, results, fields) {
+            if(err) {
+              console.log("Unable to create table: '" + table_name +"' ! Exit...");
+              process.exit(-1);
+            } 
+
+            console.log("Table '" + table_name +"' was created with success.");
+
+            if(table_index == self.config.tables.length-1) {
+              console.log("-- MySQL Backend is ready !");
+            }
+          });
+        });
+      }
+
+    });
+  }
+}
+
+
 
 /**
  * Method executed when statsd flush received datas
@@ -154,8 +240,8 @@ StatdMySQLBackend.prototype.handleCounters = function(_counters, time_stamp) {
 
     // Call countersEngine's buildQuerries method
     querries = self.engines.countersEngine.buildQuerries(userCounters, time_stamp);
-
     var querriesCount = querries.length;
+
     console.log("Querries count : " + querriesCount );
 
     // If at least one querry can be executed
