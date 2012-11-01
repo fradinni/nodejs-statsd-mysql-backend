@@ -1,10 +1,10 @@
 nodejs-statsd-mysql-backend
 ===========================
 
-Backend MySQL pour Statsd
+MySQL backend for Statsd
 
 ## Install
-Go into directory containing Statsd and axecute this command :
+Go into Statsd parent directory and execute :
 ```bash
 git clone https://github.com/fradinni/nodejs-statsd-mysql-backend.git
 ```
@@ -14,7 +14,7 @@ You should have a new directory called 'nodejs-statsd-mysql-backend' just next t
 Edit Statsd configuraton file and add mysql-backend configuration.
 
 Example :
-```bash
+```js
 {
   graphitePort: 2003
 , graphiteHost: "localhost"
@@ -31,18 +31,19 @@ Example :
   }
 }
 ```
+
 Required parameters :
 
-	host:	MySQL instance host
-	port:	MySQL instance port
-	user:	MySQL user
-	password: MySQL password
-	database:	Default database where statsd table are stored
+	*host:	MySQL instance host
+	*port:	MySQL instance port
+	*user:	MySQL user
+	*password: MySQL password
+	*database:	Default database where statsd table are stored
 
 Optional parameters :
 
-	tables:		List of tables names used (ex: ["stats", "users"])
-	engines:	List of MySQL Backend engines (see 'MySQL Bakend Engines' chapter for more details)
+	*tables:		List of tables names used (ex: ["stats", "users"])
+	*engines:	List of MySQL Backend engines (see 'MySQL Bakend Engines' chapter for more details)
 
 
 ## Introduction
