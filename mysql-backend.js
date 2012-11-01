@@ -168,14 +168,14 @@ StatdMySQLBackend.prototype.executeQuerries = function(sqlQuerries) {
   var self = this;
 
   for(var i = 0 ; i < sqlQuerries.length ; i++){
-    console.log("Query " + (i+1) + " : " + sqlQuerries[i]);
+    console.log("Query " + i + " : " + sqlQuerries[i]);
     self.sqlConnection.query(sqlQuerries[i], function(err, rows) {
       if(!err) {
-        console.log("Query " + (i+1) + " [SUCCESS]");
+        console.log("Query " + i + " [SUCCESS]");
       }
       else {
         //TODO : add better error handling code
-        console.log("Query " + (i+1) + " [ERROR]"); 
+        console.log("Query " + i + " [ERROR]"); 
       }
     });  
   }
