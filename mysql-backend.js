@@ -8,11 +8,14 @@
 ///////////////////////////////////////////////////////////////////////////////////
 
 var _mysql = require('mysql'),
-    util = require('util');
+    util = require('util'),
+    events = require('events');
 
 var STATSD_PACKETS_RECEIVED = "statsd.packets_received";
 var STATSD_BAD_LINES = "statsd.bad_lines_seen";
 
+
+var engineEvents = new events.EventEmitter();
 
 /**
  * Backend Constructor
@@ -23,7 +26,8 @@ var STATSD_BAD_LINES = "statsd.bad_lines_seen";
  */
 function StatdMySQLBackend(startupTime, config, emitter) {
   var self = this;
-  this.config = config.mysql || {};
+  self.config = config.mysql || {};
+  self.engines = {};
 
   // Verifying that the config file contains enough information for this backend to work  
   if(!this.config.host || !this.config.database || !this.config.user) {
@@ -36,11 +40,36 @@ function StatdMySQLBackend(startupTime, config, emitter) {
     this.config.port = 3306;
   }
 
+  // Default engines
+  if(!self.config.engines) {
+    self.config.engines = {};
+    self.config.engines.countersEngine = "./countersEngine.js";
+  }
+  
+  // Load backend engines
+  self.loadEngines();
+ 
   // Attach events
   emitter.on('flush', function(time_stamp, metrics) { self.onFlush(time_stamp, metrics); } );
   emitter.on('status', self.onStatus );
 }
 
+
+/**
+ *
+ *
+ */
+StatdMySQLBackend.prototype.loadEngines = function() {
+	var self = this;
+
+  // Load counters engine
+  self.engines.countersEngine = require(self.config.engines.countersEngine).init();
+  if(self.engines.countersEngine === undefined) {
+    console.log("Unable to load counter engine ! Please check...");
+    process.exit(-1);
+  }
+
+}
 
 
 /**
@@ -123,15 +152,8 @@ StatdMySQLBackend.prototype.handleCounters = function(_counters, time_stamp) {
 
     console.log("Preaparing querries...");
 
-    // Iterate on each userCounter
-    for(var userCounterName in userCounters) {
-      var counterValue = userCounters[userCounterName];
-      if(counterValue === 0) {
-        continue;
-      } else {
-        querries.push("insert into `statistics` (`timestamp`,`name`,`value`) values(" + time_stamp + ",'" + escape(userCounterName) +"'," + counterValue + ") on duplicate key update value = value + " + counterValue + ", timestamp = " + time_stamp);
-      }
-    }
+    // Call countersEngine's buildQuerries method
+    querries = self.engines.countersEngine.buildQuerries(userCounters, time_stamp);
 
     var querriesCount = querries.length;
     console.log("Querries count : " + querriesCount );
