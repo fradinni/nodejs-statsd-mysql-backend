@@ -53,8 +53,9 @@ It save statsd received values to a MySQL database.
 
 ## Data Structure for statsd counters
 By default, values are stored into a 'counters_statistics' table. This table has a very simple structure with 3 columns :
-* `timestamp`: The timestamp sent by statsd flush event
-* `name`: The counter name
-* `value`: The counter value
+* `timestamp`: The timestamp sent by statsd flush event.
+* `name`: The counter name.
+* `value`: The counter value.
+
 The primary key of this table is composed by fields: timestamp and name. It means when a new value arrives for a counter, this value is added to the previous one and stored in database. With this mechanism, we can keep a log of counters values.
 
