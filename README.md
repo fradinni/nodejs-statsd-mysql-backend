@@ -3,6 +3,9 @@ nodejs-statsd-mysql-backend
 
 MySQL backend for Statsd
 
+## Contributors
+This statsd backend is developped by Nicolas FRADIN and Damien PACAUD.
+
 ## Install
 Go into Statsd parent directory and execute :
 ```bash
@@ -42,8 +45,8 @@ Required parameters :
 
 Optional parameters :
 
-* `tables`: List of tables names used (ex: ["stats", "users"]).
-* `engines`: List of MySQL Backend engines (see 'MySQL Bakend Engines' chapter for more details).
+* `tables`: List of tables names used (see 'Customize MySQL Bakend Database' section for more details).
+* `engines`: List of MySQL Backend engines (see 'Customize MySQL Bakend Engines' section for more details).
 
 
 ## Introduction
@@ -51,11 +54,113 @@ This is node.js backend for statsd. It is written in JavaScript, does not requir
 
 It save statsd received values to a MySQL database.
 
-## Data Structure for statsd counters
-By default, values are stored into a 'counters_statistics' table. This table has a very simple structure with 3 columns :
+## Data Structure for Counters
+By default, counters values are stored into a 'counters_statistics' table. This table has a very simple structure with 3 columns :
 * `timestamp`: The timestamp sent by statsd flush event.
 * `name`: The counter name.
 * `value`: The counter value.
 
-The primary key of this table is composed by fields: timestamp and name. It means when a new value arrives for a counter, this value is added to the previous one and stored in database. With this mechanism, we can keep a log of counters values.
+The primary key of this table is composed by fields: `timestamp` and `name`. It means when a new value arrives for a counter, this value is added to the previous one and stored in database. With this mechanism, we can keep a log of counters values.
 
+
+## Customize MySQL Backend Database
+
+If you want to change where statsd datas are stored just follow the guide :)
+
+By default database tables are defined like that :
+````js
+{
+	counters: ["counters_statistics"],
+	gauges: ["gauges_statistics"],
+	timers: ["timers_statistics"],
+	sets: ["sets_statistics"]
+}
+```
+
+If we want to duplicate statsd counters datas into a new table called 'duplicate_counters_stats', we have to add new table name to counters tables list.
+
+Open stats config file and add tables configuration :
+```
+mysql: { 
+   host: "localhost", 
+   port: 3306, 
+   user: "root", 
+   password: "root", 
+   database: "statsd_db"
+
+   // Tables configuration
+   tables: {
+   		counters: ["counters_statistics", "duplicate_counters_stats"]
+   }
+}
+```
+
+Then place new table creation script into "nodejs-statsd-mysql-backend/tables" directory.
+The file should be nammed "[table_name].sql", so create a file named 'duplicate_counters_stats.sql'.
+
+Example of creation script 'duplicate_counters_stats.sql' :
+```sql
+CREATE  TABLE `statsd_db`.`duplicate_counters_stats` (
+    `timestamp` BIGINT NOT NULL ,
+    `name` VARCHAR(255) NOT NULL ,
+    `value` VARCHAR(45) NOT NULL ,
+PRIMARY KEY (`timestamp`, `name`) );
+```
+
+The last step is the modification of the Counters Query Engine. We can also create a new Query Engine but we will see how to do that in the next section.
+
+Open the file "nodejs-statsd-mysql-backend/engines/countersEngine.js".
+
+We will focus on a specific line of this file :
+```js
+querries.push("insert into `counters_statistics` (`timestamp`,`name`,`value`) values(" + time_stamp + ",'" + userCounterName +"'," + counterValue + ") on duplicate key update value = value + " + counterValue + ", timestamp = " + time_stamp);
+```
+
+Just duplicate this line and change the table name :
+```js
+querries.push("insert into `counters_statistics` (`timestamp`,`name`,`value`) values(" + time_stamp + ",'" + userCounterName +"'," + counterValue + ") on duplicate key update value = value + " + counterValue + ", timestamp = " + time_stamp);
+
+querries.push("insert into `duplicate_counters_stats` (`timestamp`,`name`,`value`) values(" + time_stamp + ",'" + userCounterName +"'," + counterValue + ") on duplicate key update value = value + " + counterValue + ", timestamp = " + time_stamp);
+```
+
+Values will be inserted in two tables: 'counters_statistics' and 'duplicate_counters_stats'.
+
+In this example, colums are the same in two table so, we just have to change the table name.
+
+But you can customize this...
+
+
+## Customize MySQL Backend Query Engines
+
+If you want to add customized querry engines to MySQL Backend, it's very simple.
+
+First, create a new engine in "nodejs-statsd-mysql-backend/engines" directory.
+For example, copy the existing "countersEngine.js" and rename it into "customizedCountersEngine.js".
+
+Make some modifications inside it...
+
+Then, declare the new engine in MySQL Backend configuration.
+Open statsd config file and add engines configuration:
+
+```js
+mysql: { 
+   host: "localhost", 
+   port: 3306, 
+   user: "root", 
+   password: "root", 
+   database: "statsd_db"
+
+   // Tables configuration
+   tables: {
+   		counters: ["counters_statistics", "duplicate_counters_stats"]
+   }
+
+   // Query Engines configuration
+   engines: {
+   		counters: ["engines/countersEngine.js", "engines/customizedCountersEngine.js"]
+   }
+}
+
+```
+
+Your querry engine will be triggered for each new Counter data.

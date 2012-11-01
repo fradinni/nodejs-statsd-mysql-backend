@@ -36,7 +36,12 @@ var STATSD_BAD_LINES = "statsd.bad_lines_seen";
 function StatdMySQLBackend(startupTime, config, emitter) {
   var self = this;
   self.config = config.mysql || {};
-  self.engines = {};
+  self.engines = {
+    counters: [],
+    gauges: [],
+    timers: [],
+    sets: []
+  };
 
   // Verifying that the config file contains enough information for this backend to work  
   if(!this.config.host || !this.config.database || !this.config.user) {
@@ -59,13 +64,17 @@ function StatdMySQLBackend(startupTime, config, emitter) {
 
   //Default tables
   if(!this.config.tables) {
-    this.config.tables = ["counters_statistics"];
+    this.config.tables = {counters: ["counters_statistics"]};
   }
 
   // Default engines
   if(!self.config.engines) {
-    self.config.engines = {};
-    self.config.engines.countersEngine = "./countersEngine.js";
+    self.config.engines = {
+      counters: ["engines/countersEngine.js"],
+      gauges: [],
+      timers: [],
+      sets: []
+    };
   }
   
 
@@ -82,17 +91,30 @@ function StatdMySQLBackend(startupTime, config, emitter) {
 
 
 /**
- *
+ * Load MySQL Backend Query Engines
  *
  */
 StatdMySQLBackend.prototype.loadEngines = function() {
 	var self = this;
 
-  // Load counters engine
-  self.engines.countersEngine = require(self.config.engines.countersEngine).init();
-  if(self.engines.countersEngine === undefined) {
-    console.log("Unable to load counter engine ! Please check...");
-    process.exit(-1);
+  // Iterate on each engine type defined in configuration
+  for(var engineType in self.config.engines) {
+    var typeEngines = self.config.engines[engineType];
+
+    // Load engines for current type
+    for(var engineIndex in typeEngines) {
+      // Get current engine path
+      var enginePath = typeEngines[engineIndex];
+
+      // Load current engine
+      var currentEngine = require(self.config.backendPath + enginePath).init();
+      if(currentEngine === undefined) {
+        console.log("Unable to load engine '" + enginePath + "' ! Please check...");
+        process.exit(-1);
+      }
+      // Add engine to MySQL Backend engines
+      self.engines.counters.push(currentEngine);
+    }
   }
 
 }
@@ -137,10 +159,10 @@ StatdMySQLBackend.prototype.closeMySqlConnection = function() {
 
 
 /**
- *
+ * Check if required tables are created. If not create them.
  *
  */
-StatdMySQLBackend.prototype.checkDatabase = function(callback) {
+StatdMySQLBackend.prototype.checkDatabase = function() {
   var self = this;
 
   var isConnected = self.openMySqlConnection();
@@ -149,50 +171,52 @@ StatdMySQLBackend.prototype.checkDatabase = function(callback) {
     process.exit(-1);
   }
 
-  // Check if tables exists
-  for(var table_index in self.config.tables) {
-    var table_name = self.config.tables[table_index];
-    console.log("Check if table exists : '" + table_name + "'");
-    self.sqlConnection.query('show tables like "'+table_name+'";', function(err, results, fields) {
-      if(err) {
-        console.log("Unbale to execute query !");
-        process.exit(-1);
-      }
+  // Iterate on each stat type (counters, gauges, ...)
+  var tables = self.config.tables
+  for(var statType in tables) {
 
-      // If table doesn't exists
-      if(results.length > 0) {
-        console.log("Table '" + table_name + "' was found !");
-        if(table_index == self.config.tables.length-1) {
-          console.log("-- MySQL Backend is ready !");
+    // Get tables for current stat type
+    var typeTables = tables[statType];
+
+    // Iterate on each table for current stat type
+    for(var table_index in typeTables) {
+      var table_name = typeTables[table_index];
+      console.log("Check if table exists : '" + table_name + "'");
+      self.sqlConnection.query('show tables like "'+table_name+'";', function(err, results, fields) {
+        if(err) {
+          console.log("Unbale to execute query !");
+          process.exit(-1);
         }
-      } else {
-        console.log("Table '" + table_name + "' was not found !");
 
-        // Try to read SQL file for this table
-        var sqlFilePath = self.config.backendPath + 'tables/' + table_name + '.sql';
-        fs.readFile(sqlFilePath, 'utf8', function (err,data) {
-          if (err) {
-            console.log("Unable to read file: '" + sqlFilePath + "' ! Exit...");
-            process.exit(-1);
-          }
-          
-          self.sqlConnection.query(data, function(err, results, fields) {
-            if(err) {
-              console.log("Unable to create table: '" + table_name +"' ! Exit...");
+        // If table doesn't exists
+        if(results.length > 0) {
+          console.log("Table '" + table_name + "' was found !");
+        } else {
+          console.log("Table '" + table_name + "' was not found !");
+
+          // Try to read SQL file for this table
+          var sqlFilePath = self.config.backendPath + 'tables/' + table_name + '.sql';
+          fs.readFile(sqlFilePath, 'utf8', function (err,data) {
+            if (err) {
+              console.log("Unable to read file: '" + sqlFilePath + "' ! Exit...");
               process.exit(-1);
-            } 
-
-            console.log("Table '" + table_name +"' was created with success.");
-
-            if(table_index == self.config.tables.length-1) {
-              console.log("-- MySQL Backend is ready !");
             }
-          });
-        });
-      }
+            
+            self.sqlConnection.query(data, function(err, results, fields) {
+              if(err) {
+                console.log("Unable to create table: '" + table_name +"' ! Exit...");
+                process.exit(-1);
+              } 
 
-    });
+              console.log("Table '" + table_name +"' was created with success.");
+            });
+          });
+        }
+      });
+    }
+
   }
+
 }
 
 
@@ -212,6 +236,7 @@ StatdMySQLBackend.prototype.onFlush = function(time_stamp, metrics) {
   var sets = metrics['sets'];
   var pctThreshold = metrics['pctThreshold'];
 
+  // Handle statsd counters
   self.handleCounters(counters,time_stamp);
   
 }
@@ -238,13 +263,23 @@ StatdMySQLBackend.prototype.handleCounters = function(_counters, time_stamp) {
 
     console.log("Preaparing querries...");
 
-    // Call countersEngine's buildQuerries method
-    querries = self.engines.countersEngine.buildQuerries(userCounters, time_stamp);
-    var querriesCount = querries.length;
+    //////////////////////////////////////////////////////////////////////
+    // Call buildQuerries method on each counterEngine
+    for(var countersEngineIndex in self.engines.counters) {
+      console.log("countersEngineIndex = " + countersEngineIndex);
+      var countersEngine = self.engines.counters[countersEngineIndex];
 
+      // Add current engine querries to querries list
+      var engineQuerries = countersEngine.buildQuerries(userCounters, time_stamp);
+      querries = querries.concat(engineQuerries);
+    }
+
+    // Display querries count
+    var querriesCount = querries.length;
     console.log("Querries count : " + querriesCount );
 
-    // If at least one querry can be executed
+    //////////////////////////////////////////////////////////////////////
+    // If at least one querry can be executed, execute pending querries
     if(querriesCount > 0) {
 
       // Open MySQL connection
@@ -262,8 +297,6 @@ StatdMySQLBackend.prototype.handleCounters = function(_counters, time_stamp) {
 
     }
 
-  } else {
-    console.log("No user packets received.");
   }
 
   return;

@@ -20,7 +20,14 @@ MySQLBackendCountersEngine.prototype.buildQuerries = function(userCounters, time
       if(counterValue === 0) {
         continue;
       } else {
-        querries.push("insert into `counters_statistics` (`timestamp`,`name`,`value`) values(" + time_stamp + ",'" + escape(userCounterName) +"'," + counterValue + ") on duplicate key update value = value + " + counterValue + ", timestamp = " + time_stamp);
+        /**********************************************************************
+         * Edit following line to custumize where statsd datas are inserted
+         *
+         * Parameters :
+         *    - userCounterName: Counter name
+         *    - counterValue: Counter value
+         */
+        querries.push("insert into `counters_statistics` (`timestamp`,`name`,`value`) values(" + time_stamp + ",'" + userCounterName +"'," + counterValue + ") on duplicate key update value = value + " + counterValue + ", timestamp = " + time_stamp);
       }
     }
 
