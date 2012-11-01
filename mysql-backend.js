@@ -59,7 +59,7 @@ function StatdMySQLBackend(startupTime, config, emitter) {
 
   //Default tables
   if(!this.config.tables) {
-    this.config.tables = ["statistics"];
+    this.config.tables = ["counters_statistics"];
   }
 
   // Default engines

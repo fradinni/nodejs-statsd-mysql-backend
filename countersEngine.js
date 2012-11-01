@@ -20,7 +20,7 @@ MySQLBackendCountersEngine.prototype.buildQuerries = function(userCounters, time
       if(counterValue === 0) {
         continue;
       } else {
-        querries.push("insert into `statistics` (`timestamp`,`name`,`value`) values(" + time_stamp + ",'" + escape(userCounterName) +"'," + counterValue + ") on duplicate key update value = value + " + counterValue + ", timestamp = " + time_stamp);
+        querries.push("insert into `counters_statistics` (`timestamp`,`name`,`value`) values(" + time_stamp + ",'" + escape(userCounterName) +"'," + counterValue + ") on duplicate key update value = value + " + counterValue + ", timestamp = " + time_stamp);
       }
     }
 
