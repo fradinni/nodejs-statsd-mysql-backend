@@ -125,7 +125,7 @@ querries.push("insert into `duplicate_counters_stats` (`timestamp`,`name`,`value
 
 Values will be inserted in two tables: 'counters_statistics' and 'duplicate_counters_stats'.
 
-In this example, colums are the same in two table so, we just have to change the table name.
+In this example, colums are the same in the two tables so, we just have to change the table name.
 
 But you can customize this...
 
