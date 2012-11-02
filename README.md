@@ -116,7 +116,7 @@ BEGIN
       DECLARE r INT;
       SELECT  MAX(`value`)
       INTO    r
-      FROM    `statsd_db`.`duplicate_counters_get_max`
+      FROM    `statsd_db`.`duplicate_counters_stats`
       WHERE   name = _name;
       
       RETURN IF(r IS NULL, 0, r);
