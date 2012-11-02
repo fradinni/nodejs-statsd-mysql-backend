@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////////
-//  NodeJS Statsd MySQL Backend 1.0
+//  NodeJS Statsd MySQL Backend 0.1.0-alpha1
 // ------------------------------------------------------------------------------
 //
 // Authors: Nicolas FRADIN, Damien PACAUD
