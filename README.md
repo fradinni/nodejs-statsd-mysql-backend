@@ -100,11 +100,25 @@ The file should be nammed "[table_name].sql", so create a file named 'duplicate_
 
 Example of creation script 'duplicate_counters_stats.sql' :
 ```sql
+-- Counters statistics table
 CREATE  TABLE `statsd_db`.`duplicate_counters_stats` (
     `timestamp` BIGINT NOT NULL ,
     `name` VARCHAR(255) NOT NULL ,
-    `value` VARCHAR(45) NOT NULL ,
-PRIMARY KEY (`timestamp`, `name`) );
+    `value` INT(11) NOT NULL ,
+PRIMARY KEY (`name`, `timestamp`) )$$
+
+-- Procedure used to calculate values sum for the same userKey name
+CREATE FUNCTION `duplicate_counters_get_max`(_name VARCHAR(255)) RETURNS INT(11)
+READS SQL DATA
+BEGIN 
+      DECLARE r INT;
+      SELECT  MAX(`value`)
+      INTO    r
+      FROM    `statsd_db`.`duplicate_counters_get_max`
+      WHERE   name = _name;
+      
+      RETURN IF(r IS NULL, 0, r);
+END$$
 ```
 
 The last step is the modification of the Counters Query Engine. We can also create a new Query Engine but we will see how to do that in the next section.
@@ -113,14 +127,13 @@ Open the file "nodejs-statsd-mysql-backend/engines/countersEngine.js".
 
 We will focus on a specific line of this file :
 ```js
-querries.push("insert into `counters_statistics` (`timestamp`,`name`,`value`) values(" + time_stamp + ",'" + userCounterName +"'," + counterValue + ") on duplicate key update value = value + " + counterValue + ", timestamp = " + time_stamp);
+querries.push("insert into `counters_statistics` values ("+time_stamp+", '"+userCounterName+"', counters_get_max(name) + "+counterValue+");");
 ```
 
 Just duplicate this line and change the table name :
 ```js
-querries.push("insert into `counters_statistics` (`timestamp`,`name`,`value`) values(" + time_stamp + ",'" + userCounterName +"'," + counterValue + ") on duplicate key update value = value + " + counterValue + ", timestamp = " + time_stamp);
-
-querries.push("insert into `duplicate_counters_stats` (`timestamp`,`name`,`value`) values(" + time_stamp + ",'" + userCounterName +"'," + counterValue + ") on duplicate key update value = value + " + counterValue + ", timestamp = " + time_stamp);
+querries.push("insert into `counters_statistics` values ("+time_stamp+", '"+userCounterName+"', counters_get_max(name) + "+counterValue+");");
+querries.push("insert into `duplicate_counters_stats` values ("+time_stamp+", '"+userCounterName+"', counters_get_max(name) + "+counterValue+");");stamp);
 ```
 
 Values will be inserted in two tables: 'counters_statistics' and 'duplicate_counters_stats'.
