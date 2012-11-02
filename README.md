@@ -100,6 +100,8 @@ The file should be nammed "[table_name].sql", so create a file named 'duplicate_
 
 Example of creation script 'duplicate_counters_stats.sql' :
 ```sql
+-- Stadard DELIMITER is $$
+
 -- Counters statistics table
 CREATE  TABLE `statsd_db`.`duplicate_counters_stats` (
     `timestamp` BIGINT NOT NULL ,
