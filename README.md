@@ -135,7 +135,7 @@ querries.push("insert into `counters_statistics` values ("+time_stamp+", '"+user
 Just duplicate this line and change the table name :
 ```js
 querries.push("insert into `counters_statistics` values ("+time_stamp+", '"+userCounterName+"', counters_get_max(name) + "+counterValue+");");
-querries.push("insert into `duplicate_counters_stats` values ("+time_stamp+", '"+userCounterName+"', counters_get_max(name) + "+counterValue+");");stamp);
+querries.push("insert into `duplicate_counters_stats` values ("+time_stamp+", '"+userCounterName+"', duplicate_counters_get_max(name) + "+counterValue+");");
 ```
 
 Values will be inserted in two tables: 'counters_statistics' and 'duplicate_counters_stats'.
