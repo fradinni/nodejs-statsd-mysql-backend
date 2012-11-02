@@ -27,7 +27,8 @@ MySQLBackendCountersEngine.prototype.buildQuerries = function(userCounters, time
          *    - userCounterName: Counter name
          *    - counterValue: Counter value
          */
-        querries.push("insert into `counters_statistics` (`timestamp`,`name`,`value`) values(" + time_stamp + ",'" + userCounterName +"'," + counterValue + ") on duplicate key update value = value + " + counterValue + ", timestamp = " + time_stamp);
+        //querries.push("insert into `counters_statistics` (`timestamp`,`name`,`value`) values(" + time_stamp + ",'" + userCounterName +"'," + counterValue + ") on duplicate key update value = value + " + counterValue + ", timestamp = " + time_stamp);
+        querries.push("insert into `counters_statistics` values ("+time_stamp+", '"+userCounterName+"', counters_get_max(name) + "+counterValue+");");
       }
     }
 

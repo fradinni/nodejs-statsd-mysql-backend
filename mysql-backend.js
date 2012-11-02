@@ -201,15 +201,24 @@ StatdMySQLBackend.prototype.checkDatabase = function() {
               console.log("Unable to read file: '" + sqlFilePath + "' ! Exit...");
               process.exit(-1);
             }
-            
-            self.sqlConnection.query(data, function(err, results, fields) {
-              if(err) {
-                console.log("Unable to create table: '" + table_name +"' ! Exit...");
-                process.exit(-1);
-              } 
 
-              console.log("Table '" + table_name +"' was created with success.");
-            });
+            // Split querries
+            var querries = data.split("$$");
+
+            // Execute each query
+            for(var queryIndex in querries) {
+              var query = querries[queryIndex];
+              if(query.trim() == "") continue;
+              self.sqlConnection.query(query, function(err, results, fields) {
+                if(err) {
+                  console.log("Unable to execute query: '" + query +"' for table '"+table_name+"' ! Exit...");
+                  process.exit(-1);
+                } 
+
+              });
+            }
+            console.log("Table '" + table_name +"' was created with success.");
+            
           });
         }
       });
@@ -279,7 +288,7 @@ StatdMySQLBackend.prototype.handleCounters = function(_counters, time_stamp) {
     console.log("Querries count : " + querriesCount );
 
     //////////////////////////////////////////////////////////////////////
-    // If at least one querry can be executed, execute pending querries
+    // If at least one query can be executed, execute pending querries
     if(querriesCount > 0) {
 
       // Open MySQL connection
