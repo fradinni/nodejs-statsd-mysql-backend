@@ -3,6 +3,8 @@ nodejs-statsd-mysql-backend
 
 MySQL backend for Statsd
 
+Current version 0.1.0-alpha1
+
 ## Contributors
 This statsd backend is developped by Nicolas FRADIN and Damien PACAUD.
 
@@ -54,6 +56,7 @@ This is node.js backend for statsd. It is written in JavaScript, does not requir
 
 It save statsd received values to a MySQL database.
 
+
 ## Data Structure for Counters
 By default, counters values are stored into a 'counters_statistics' table. This table has a very simple structure with 3 columns :
 * `timestamp`: The timestamp sent by statsd flush event.
@@ -61,6 +64,21 @@ By default, counters values are stored into a 'counters_statistics' table. This 
 * `value`: The counter value.
 
 The primary key of this table is composed by fields: `timestamp` and `name`. It means when a new value arrives for a counter, this value is added to the previous one and stored in database. With this mechanism, we can keep a log of counters values.
+
+
+## Data Structure for Gauges
+
+Not implemented yet.
+
+
+## Data Structure for Timers
+
+Not implemented yet.
+
+
+## Data Structure for Sets
+
+Not implemented yet.
 
 
 ## Customize MySQL Backend Database
