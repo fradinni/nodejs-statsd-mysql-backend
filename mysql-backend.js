@@ -304,28 +304,7 @@ StatdMySQLBackend.prototype.handleCounters = function(_counters, time_stamp) {
 
     // Close MySQL Connection
     self.closeMySqlConnection();
-
-    /*//////////////////////////////////////////////////////////////////////
-    // If at least one query can be executed, execute pending querries
-    if(querriesCount > 0) {
-
-      // Open MySQL connection
-      var canExecuteQuerries = self.openMySqlConnection();
-
-      // If connection succeed
-      if(canExecuteQuerries) {
-        console.log("Executing " + querriesCount + " querries...");
-        // Execute querries
-        self.executeQuerries(querries);
-
-        // Close MySQL connection
-        self.closeMySqlConnection();
-      }
-
-    }*/
-
-  }
-
+    
   return;
 
 }
