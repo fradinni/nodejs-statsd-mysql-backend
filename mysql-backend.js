@@ -272,22 +272,40 @@ StatdMySQLBackend.prototype.handleCounters = function(_counters, time_stamp) {
 
     console.log("Preaparing querries...");
 
-    //////////////////////////////////////////////////////////////////////
-    // Call buildQuerries method on each counterEngine
-    for(var countersEngineIndex in self.engines.counters) {
-      console.log("countersEngineIndex = " + countersEngineIndex);
-      var countersEngine = self.engines.counters[countersEngineIndex];
+    // Open MySQL connection
+    var canExecuteQuerries = self.openMySqlConnection();
+    if(canExecuteQuerries) {
 
-      // Add current engine querries to querries list
-      var engineQuerries = countersEngine.buildQuerries(userCounters, time_stamp);
-      querries = querries.concat(engineQuerries);
+      //////////////////////////////////////////////////////////////////////
+      // Call buildQuerries method on each counterEngine
+      for(var countersEngineIndex in self.engines.counters) {
+        console.log("countersEngineIndex = " + countersEngineIndex);
+        var countersEngine = self.engines.counters[countersEngineIndex];
+
+        // Add current engine querries to querries list
+        var engineQuerries = countersEngine.buildQuerries(userCounters, time_stamp);
+        querries = querries.concat(engineQuerries);
+
+        // Insert data into database every 100 query
+        if(querries.length >= 100) {
+          // Execute querries
+          self.executeQuerries(querries);
+          querries = [];
+        }
+
+      }
+
+      if(querries.length > 0) {
+        // Execute querries
+        self.executeQuerries(querries);
+        querries = [];
+      }
     }
 
-    // Display querries count
-    var querriesCount = querries.length;
-    console.log("Querries count : " + querriesCount );
+    // Close MySQL Connection
+    self.closeMySqlConnection();
 
-    //////////////////////////////////////////////////////////////////////
+    /*//////////////////////////////////////////////////////////////////////
     // If at least one query can be executed, execute pending querries
     if(querriesCount > 0) {
 
@@ -304,7 +322,7 @@ StatdMySQLBackend.prototype.handleCounters = function(_counters, time_stamp) {
         self.closeMySqlConnection();
       }
 
-    }
+    }*/
 
   }
 
