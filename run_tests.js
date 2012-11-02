@@ -1,8 +1,8 @@
 ////////////////////////////////////////////////////
 //
-// Usage : 	node run_tests "command" [nb packets to send]
+// Usage : 	node run_tests.js "command" [nb packets to send]
 //
-// Example : 	node run_tests "gorets:10|c" 100
+// Example : 	node run_tests.js "gorets:10|c" 100
 //
 //
 var dgram = require('dgram');
