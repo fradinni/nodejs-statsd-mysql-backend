@@ -64,14 +64,14 @@ function StatdMySQLBackend(startupTime, config, emitter) {
 
   //Default tables
   if(!this.config.tables) {
-    this.config.tables = {counters: ["counters_statistics"]};
+    this.config.tables = {counters: ["counters_statistics"], gauges: ["gauges_statistics"]};
   }
 
   // Default engines
   if(!self.config.engines) {
     self.config.engines = {
       counters: ["engines/countersEngine.js"],
-      gauges: [],
+      gauges: ["engines/gaugesEngine.js"],
       timers: [],
       sets: []
     };
@@ -113,7 +113,7 @@ StatdMySQLBackend.prototype.loadEngines = function() {
         process.exit(-1);
       }
       // Add engine to MySQL Backend engines
-      self.engines.counters.push(currentEngine);
+      self.engines[engineType].push(currentEngine);
     }
   }
 
@@ -189,9 +189,7 @@ StatdMySQLBackend.prototype.checkDatabase = function() {
         }
 
         // If table doesn't exists
-        if(results.length > 0) {
-          console.log("Table '" + table_name + "' was found !");
-        } else {
+        if(results.length == 0) {
           console.log("Table '" + table_name + "' was not found !");
 
           // Try to read SQL file for this table
@@ -247,6 +245,9 @@ StatdMySQLBackend.prototype.onFlush = function(time_stamp, metrics) {
 
   // Handle statsd counters
   self.handleCounters(counters,time_stamp);
+
+  // Handle statsd gauges
+  self.handleGauges(gauges,time_stamp);
   
 }
 
@@ -268,47 +269,107 @@ StatdMySQLBackend.prototype.handleCounters = function(_counters, time_stamp) {
   if(packets_received > 0) {
     // Get userCounters for this flush
     var userCounters = self.getUserCounters(_counters);
-    var querries = [];
+    var userCountersSize = 0;
+    for(var userCounterName in userCounters) { userCountersSize++; }
+   
+    if(userCountersSize > 0) {
+      console.log("Counters received !");
 
-    console.log("Preaparing querries...");
+      var querries = [];
 
-    // Open MySQL connection
-    var canExecuteQuerries = self.openMySqlConnection();
-    if(canExecuteQuerries) {
+      // Open MySQL connection
+      var canExecuteQuerries = self.openMySqlConnection();
+      if(canExecuteQuerries) {
 
-      //////////////////////////////////////////////////////////////////////
-      // Call buildQuerries method on each counterEngine
-      for(var countersEngineIndex in self.engines.counters) {
-        console.log("countersEngineIndex = " + countersEngineIndex);
-        var countersEngine = self.engines.counters[countersEngineIndex];
+        //////////////////////////////////////////////////////////////////////
+        // Call buildQuerries method on each counterEngine
+        for(var countersEngineIndex in self.engines.counters) {
+          console.log("countersEngineIndex = " + countersEngineIndex);
+          var countersEngine = self.engines.counters[countersEngineIndex];
 
-        // Add current engine querries to querries list
-        var engineQuerries = countersEngine.buildQuerries(userCounters, time_stamp);
-        querries = querries.concat(engineQuerries);
+          // Add current engine querries to querries list
+          var engineQuerries = countersEngine.buildQuerries(userCounters, time_stamp);
+          querries = querries.concat(engineQuerries);
 
-        // Insert data into database every 100 query
-        if(querries.length >= 100) {
+          // Insert data into database every 100 query
+          if(querries.length >= 100) {
+            // Execute querries
+            self.executeQuerries(querries);
+            querries = [];
+          }
+
+        }
+
+        if(querries.length > 0) {
           // Execute querries
           self.executeQuerries(querries);
           querries = [];
         }
-
       }
 
-      if(querries.length > 0) {
-        // Execute querries
-        self.executeQuerries(querries);
-        querries = [];
-      }
+      // Close MySQL Connection
+      self.closeMySqlConnection();
+    }
+  }
+
+}
+
+
+
+/**
+ * Handle and process received counters 
+ * 
+ * @param _counters received counters
+ * @param time_stamp flush time_stamp 
+ */
+StatdMySQLBackend.prototype.handleGauges = function(_gauges, time_stamp) {
+  var self = this;
+  
+  var gaugesSize = 0
+  for(var g in _gauges) { gaugesSize++; }
+
+  // If gauges received
+  if(gaugesSize > 0) {
+    console.log("Gauges received !");
+    console.log("Gauges = " + util.inspect(_gauges));
+    var querries = [];
+
+    // Open MySQL connection
+    var canExecuteQuerries = self.openMySqlConnection();
+    if(canExecuteQuerries) {
+      console.log("ok");
+        //////////////////////////////////////////////////////////////////////
+        // Call buildQuerries method on each counterEngine
+        for(var gaugesEngineIndex in self.engines.gauges) {
+          console.log("gaugesEngineIndex = " + gaugesEngineIndex);
+          var gaugesEngine = self.engines.gauges[gaugesEngineIndex];
+
+          // Add current engine querries to querries list
+          var engineQuerries = gaugesEngine.buildQuerries(_gauges, time_stamp);
+          querries = querries.concat(engineQuerries);
+
+          // Insert data into database every 100 query
+          if(querries.length >= 100) {
+            // Execute querries
+            self.executeQuerries(querries);
+            querries = [];
+          }
+
+        }
+
+        if(querries.length > 0) {
+          // Execute querries
+          self.executeQuerries(querries);
+          querries = [];
+        }
+    } else {
+      console.log("Unable to open db connection !");
     }
 
     // Close MySQL Connection
     self.closeMySqlConnection();
-    
-  return;
-
+  }
 }
-  
 
 
 StatdMySQLBackend.prototype.executeQuerries = function(sqlQuerries) {
