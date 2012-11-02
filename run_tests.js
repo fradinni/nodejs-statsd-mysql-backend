@@ -2,7 +2,9 @@
 //
 // Usage : 	node run_tests.js [nb user keys] [nb packets to send per user] [nb Requests Before Wait] [wait time in seconds]
 //
-// Example : 	node run_tests.js 5 50 20 10 // It will generate 5 userKeys and will send 50 packet for each userKey. The process will wait 10 secons every 20 requests
+// Example : 	node run_tests.js 5 50 20 10 
+// It will generate 5 userKeys and will send 50 packet for each userKey. 
+// The process will wait 10 secons every 20 requests
 //
 //
 var dgram = require('dgram'),
