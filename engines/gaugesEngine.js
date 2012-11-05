@@ -27,7 +27,7 @@ MySQLBackendGaugesEngine.prototype.buildQuerries = function(gauges, time_stamp) 
          *    - userCounterName: Counter name
          *    - counterValue: Counter value
          */
-        querries.push("insert into `gauges_statistics` values ("+time_stamp+", '"+gaugeName+"', "+gaugeValue+") on duplicate key update value = " + gaugeValue + ", timestamp = " + time_stamp);
+        querries.push("insert into `gauges_statistics` values ("+time_stamp+", '"+gaugeName+"', "+gaugeValue+");");
       }
     }
 

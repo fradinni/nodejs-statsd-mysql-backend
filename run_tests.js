@@ -15,10 +15,11 @@ var DEBUG = false;
 // Splice arguments
 var arguments = process.argv.splice(2);
 
-var nbUserKeys = parseInt(arguments[0]);
-var nbPacketsPerUser = parseInt(arguments[1]);
-var nbRequestsBeforeWait = parseInt(arguments[2]);
-var waitTime = parseInt(arguments[3]);
+var dataType = arguments[0]
+var nbUserKeys = parseInt(arguments[1]);
+var nbPacketsPerUser = parseInt(arguments[2]);
+var nbRequestsBeforeWait = parseInt(arguments[3]);
+var waitTime = parseInt(arguments[4]);
 
 if(!nbRequestsBeforeWait) nbRequestsBeforeWait = 10; // Default nbRequests before wait: 10;
 if(!waitTime) waitTime = 5;	//Default wait time: 5 seconds
@@ -123,7 +124,7 @@ var sendPackets = function () {
 	// Build packet message
 	var str = keysPattern.replace('${userKey}', userKey);
 	str = str.replace('${value}', value);
-	str = str.replace('${type}', 'c');
+	str = str.replace('${type}', dataType);
 	var message = new Buffer(str);
 	if(DEBUG) console.log("  - packet: " + message);
 
