@@ -483,13 +483,14 @@ StatdMySQLBackend.prototype.handleGauges = function(_gauges, time_stamp) {
  * @param _timers received timers
  * @param time_stamp flush time_stamp 
  */
+ //TODO : à implémenter
 StatdMySQLBackend.prototype.handleTimers = function(_timers, time_stamp) {
   var self = this;
   
   var timersSize = 0
   for(var t in _timers) { timersSize++; }
 
-  // If gauges received
+  // If timers received
   if(timersSize > 0) {
     console.log("Timers received !");
     console.log("Timers = " + util.inspect(_gauges));
