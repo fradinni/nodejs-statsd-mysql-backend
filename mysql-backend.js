@@ -346,6 +346,8 @@ StatdMySQLBackend.prototype.onFlush = function(time_stamp, metrics) {
   var sets = metrics['sets'];
   var pctThreshold = metrics['pctThreshold'];
 
+  console.log("METRICS : \n " + util.inspect(metrics) + "\n ===========================");
+
   // Handle statsd counters
   self.handleCounters(counters,time_stamp);
 
@@ -420,9 +422,9 @@ StatdMySQLBackend.prototype.handleCounters = function(_counters, time_stamp) {
 
 
 /**
- * Handle and process received counters 
+ * Handle and process received gauges 
  * 
- * @param _counters received counters
+ * @param _gauges received _gauges
  * @param time_stamp flush time_stamp 
  */
 StatdMySQLBackend.prototype.handleGauges = function(_gauges, time_stamp) {
@@ -475,6 +477,66 @@ StatdMySQLBackend.prototype.handleGauges = function(_gauges, time_stamp) {
 }
 
 
+/**
+ * Handle and process received timers 
+ * 
+ * @param _timers received timers
+ * @param time_stamp flush time_stamp 
+ */
+StatdMySQLBackend.prototype.handleTimers = function(_timers, time_stamp) {
+  var self = this;
+  
+  var timersSize = 0
+  for(var t in _timers) { timersSize++; }
+
+  // If gauges received
+  if(timersSize > 0) {
+    console.log("Timers received !");
+    console.log("Timers = " + util.inspect(_gauges));
+    var querries = [];
+
+    // Open MySQL connection
+    var canExecuteQuerries = self.openMySqlConnection();
+    if(canExecuteQuerries) {
+      console.log("ok");
+        //////////////////////////////////////////////////////////////////////
+        // Call buildQuerries method on each counterEngine
+        for(var gaugesEngineIndex in self.engines.gauges) {
+          console.log("gaugesEngineIndex = " + gaugesEngineIndex);
+          var gaugesEngine = self.engines.gauges[gaugesEngineIndex];
+
+          // Add current engine querries to querries list
+          var engineQuerries = gaugesEngine.buildQuerries(_gauges, time_stamp);
+          querries = querries.concat(engineQuerries);
+
+          // Insert data into database every 100 query
+          if(querries.length >= 100) {
+            // Execute querries
+            self.executeQuerries(querries);
+            querries = [];
+          }
+
+        }
+
+        if(querries.length > 0) {
+          // Execute querries
+          self.executeQuerries(querries);
+          querries = [];
+        }
+    } else {
+      console.log("Unable to open db connection !");
+    }
+
+    // Close MySQL Connection
+    self.closeMySqlConnection();
+  }
+}
+
+/**
+ * MISSING DOCUMENTATION 
+ * 
+ * @param sqlQuerries
+ */
 StatdMySQLBackend.prototype.executeQuerries = function(sqlQuerries) {
   
   var self = this;

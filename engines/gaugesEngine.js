@@ -27,7 +27,9 @@ MySQLBackendGaugesEngine.prototype.buildQuerries = function(gauges, time_stamp) 
          *    - userCounterName: Counter name
          *    - counterValue: Counter value
          */
-        querries.push("insert into `gauges_statistics` values ("+time_stamp+", '"+gaugeName+"', "+gaugeValue+");");
+        //querries.push("insert into `gauges_statistics` values ("+time_stamp+", '"+gaugeName+"', "+gaugeValue+");");
+        querries.push("insert into `gauges_statistics` select "+time_stamp+", '"+gaugeName+"', "+gaugeValue+" from dual where (select if(max(value),max(value),-678) from `gauges_statistics` where name = '"+gaugeName+"') = -678 OR (select value from `gauges_statistics` where name = '"+gaugeName+"' order by timestamp desc limit 0,1) <> "+gaugeValue+";")
+
       }
     }
 
