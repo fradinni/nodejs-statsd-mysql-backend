@@ -45,8 +45,8 @@ function StatdMySQLBackend(startupTime, config, emitter) {
   };
 
   // Verifying that the config file contains enough information for this backend to work  
-  if(!this.config.host || !this.config.database || !this.config.user) {
-    console.log("You need to specify at least host, port, database and user for this mysql backend");
+  if(!this.config.host || !this.config.database || !this.config.user || !this.config.password) {
+    console.log("You need to specify at least host, port, database, user and password for this mysql backend");
     process.exit(-1);
   }
 
@@ -65,7 +65,7 @@ function StatdMySQLBackend(startupTime, config, emitter) {
 
   //Default tables
   if(!this.config.tables) {
-    this.config.tables = {counters: ["counters_statistics"], gauges: ["gauges_statistics"]};
+    this.config.tables = {counters: ["counters_statistics"], gauges: ["gauges_statistics"], timers:["timers_statistics"]};
   }
 
   // Default engines
@@ -73,7 +73,7 @@ function StatdMySQLBackend(startupTime, config, emitter) {
     self.config.engines = {
       counters: ["engines/countersEngine.js"],
       gauges: ["engines/gaugesEngine.js"],
-      timers: [],
+      timers: ["engines/timersEngine.js"],
       sets: []
     };
   }
@@ -354,6 +354,9 @@ StatdMySQLBackend.prototype.onFlush = function(time_stamp, metrics) {
   // Handle statsd gauges
   self.handleGauges(gauges,time_stamp);
   
+  // Handle statsd timers
+  self.handleTimers(timers,time_stamp);
+
 }
 
 
@@ -442,7 +445,6 @@ StatdMySQLBackend.prototype.handleGauges = function(_gauges, time_stamp) {
     // Open MySQL connection
     var canExecuteQuerries = self.openMySqlConnection();
     if(canExecuteQuerries) {
-      console.log("ok");
         //////////////////////////////////////////////////////////////////////
         // Call buildQuerries method on each counterEngine
         for(var gaugesEngineIndex in self.engines.gauges) {
@@ -493,21 +495,20 @@ StatdMySQLBackend.prototype.handleTimers = function(_timers, time_stamp) {
   // If timers received
   if(timersSize > 0) {
     console.log("Timers received !");
-    console.log("Timers = " + util.inspect(_gauges));
+    console.log("Timers = " + util.inspect(_timers));
     var querries = [];
 
     // Open MySQL connection
     var canExecuteQuerries = self.openMySqlConnection();
     if(canExecuteQuerries) {
-      console.log("ok");
         //////////////////////////////////////////////////////////////////////
         // Call buildQuerries method on each counterEngine
-        for(var gaugesEngineIndex in self.engines.gauges) {
-          console.log("gaugesEngineIndex = " + gaugesEngineIndex);
-          var gaugesEngine = self.engines.gauges[gaugesEngineIndex];
+        for(var timersEngineIndex in self.engines.timers) {
+          console.log("timersEngineIndex = " + timersEngineIndex);
+          var timersEngine = self.engines.timers[timersEngineIndex];
 
           // Add current engine querries to querries list
-          var engineQuerries = gaugesEngine.buildQuerries(_gauges, time_stamp);
+          var engineQuerries = timersEngine.buildQuerries(_timers, time_stamp);
           querries = querries.concat(engineQuerries);
 
           // Insert data into database every 100 query
@@ -550,7 +551,7 @@ StatdMySQLBackend.prototype.executeQuerries = function(sqlQuerries) {
       }
       else {
         //TODO : add better error handling code
-        console.log(" -> Query [ERROR]"); 
+        console.log(" -> Query [ERROR]" + err.code); 
       }
     });  
   }

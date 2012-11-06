@@ -39,14 +39,14 @@ Example :
 
 Required parameters :
 
-* `host`: MySQL instance host.
-* `port`: MySQL instance port. 
+* `host`: MySQL instance host. 
 * `user`: MySQL user.
 * `password`: MySQL password.
 * `database`: Default database where statsd table are stored.
 
 Optional parameters :
 
+* `port`: MySQL instance port.
 * `tables`: List of tables names used (see 'Customize MySQL Bakend Database' section for more details).
 * `engines`: List of MySQL Backend engines (see 'Customize MySQL Bakend Engines' section for more details).
 
