@@ -27,7 +27,7 @@ MySQLBackendGaugesEngine.prototype.buildQuerries = function(gauges, time_stamp) 
            *    - gaugeName: Gauge name
            *    - gaugeValue: Gauge value
            */
-          // This SQL request checks if the last value for this particular gauge is the same as  gaugeValue.
+          // This SQL request checks if the last value for this particular gauge is the same as gaugeValue.
           // If it is the same, we do nothing.
           // If it is different, we insert a new line.
           // If gaugeName does not exist in the table, we insert a new line

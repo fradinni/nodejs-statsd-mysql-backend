@@ -1,12 +1,12 @@
 nodejs-statsd-mysql-backend
 ===========================
 
-MySQL backend for Statsd
+MySQL backend for [Statsd](https://github.com/etsy/statsd) by [Etsy](http://www.etsy.com/)
 
 Current version 0.1.0-alpha1
 
 ## Contributors
-This statsd backend is developped by Nicolas FRADIN and Damien PACAUD.
+This statsd backend is developped by [Nicolas FRADIN](http://www.nfradin.fr) and [Damien PACAUD](http://www.damien-pacaud.com).
 
 ## Install
 Go into Statsd parent directory and execute :
@@ -21,18 +21,16 @@ Edit Statsd configuraton file and add mysql-backend configuration.
 Example :
 ```js
 {
-  graphitePort: 2003
-, graphiteHost: "localhost"
-, port: 8125
+  port: 8125
 , backends: [ "../nodejs-statsd-mysql-backend/mysql-backend.js" ] // Backend MySQL
 
   // MySQL Backend minimal configuration
 , mysql: { 
 	   host: "localhost", 
 	   port: 3306, 
-	   user: "root", 
-	   password: "root", 
-	   database: "statsd_db"
+	   user: "user", 
+	   password: "passwd", 
+	   database: "dbName"
   }
 }
 ```
@@ -42,43 +40,100 @@ Required parameters :
 * `host`: MySQL instance host. 
 * `user`: MySQL user.
 * `password`: MySQL password.
-* `database`: Default database where statsd table are stored.
+* `database`: Default database where statsd table will be stored.
 
 Optional parameters :
 
-* `port`: MySQL instance port.
+* `port`: MySQL instance port (defaults to 3306)
 * `tables`: List of tables names used (see 'Customize MySQL Bakend Database' section for more details).
 * `engines`: List of MySQL Backend engines (see 'Customize MySQL Bakend Engines' section for more details).
 
 
 ## Introduction
-This is node.js backend for statsd. It is written in JavaScript, does not require compiling, and is 100% MIT licensed.
+This is a MySQL backend for statsd. 
 
-It save statsd received values to a MySQL database.
+It is written in JavaScript, does not require compiling, and is 100% MIT licensed.
+
+It saves received metrics to a MySQL database.
 
 
-## Data Structure for Counters
-By default, counters values are stored into a 'counters_statistics' table. This table has a very simple structure with 3 columns :
+## Supported Metrics
+
+This backend currently supports the following metrics :
+
+* Counters
+* Gauges
+* Timers
+
+### Counters ###
+
+Counters are properties whose value always increment. 
+
+They consist of a Key-Value pair and are stored in database every flush interval if they were incremented.
+This means that you have the counter's value history in your database and you can easily focus on the time window that you need (to show growth for instance).
+
+They are never reset to zero, so if you want to start over, you need a new counter name.
+
+#### Counters Data Structure ####
+
+By default, counters values are stored into a `counters_statistics` table.  
+
+This table has a very simple structure with 3 columns :
+
 * `timestamp`: The timestamp sent by statsd flush event.
 * `name`: The counter name.
 * `value`: The counter value.
 
-The primary key of this table is composed by fields: `timestamp` and `name`. It means when a new value arrives for a counter, this value is added to the previous one and stored in database. With this mechanism, we can keep a log of counters values.
+The primary key is a composed of fields: `timestamp` and `name`. 
+
+The counter's new value is calculated on insert for each flush event.
+
+### Gauges ###
+
+Gauges are properties whose value changes with time. 
+
+They consist of a Key-Value pair and are stored in database every flush interval if their value changed.
+This means that you have each gauge's value history in your database.
+
+If a gauge value does not change during a flush interval, this backend will not store a new line in the database.
+It is up to the frontend to display the fact that the value has not changed during any time period.
+
+#### Gauges Data Structure ####
+
+By default, gauges values are stored into a `gauges_statistics` table. 
+
+This table has a very simple structure with 3 columns :
+
+* `timestamp`: The timestamp sent by statsd flush event.
+* `name`: The gauge name.
+* `value`: The gauge value.
+
+The primary key is a composed of fields: `timestamp` and `name`. 
+
+A new line is inserted only if the gauge's new value differ from it's last inserted value.
+
+If you send multiple values for the same gauge during a flush interval, statsd only keeps the last received value.
+
+Exemple :
+
+your flush interval is set to 10 seconds and you send :
+```bash
+myGauge:2|g
+# Wait 1 second
+myGauge:5|g
+```
+the value that will be stored for this flush interval for your gauge 'myGauge' will be : `5`
+
+### Timers ###
+
+Work in progress
 
 
-## Data Structure for Gauges
+## Not implemented yet ##
 
-Not implemented yet.
+This is a list of statsd stuff that don't _yet_ work with this backend :
 
-
-## Data Structure for Timers
-
-Not implemented yet.
-
-
-## Data Structure for Sets
-
-Not implemented yet.
+* sets
 
 
 ## Customize MySQL Backend Database
