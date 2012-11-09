@@ -1,6 +1,6 @@
 -- Stadard DELIMITER is $$
 
--- Counters statistics table
+-- Gauges statistics table
 CREATE  TABLE `gauges_statistics` (
     `timestamp` BIGINT NOT NULL ,
     `name` VARCHAR(255) NOT NULL ,

@@ -1,6 +1,6 @@
 -- Stadard DELIMITER is $$
 
--- Counters statistics table
+-- Timers statistics table
 CREATE  TABLE `timers_statistics` (
 	`id` BIGINT NOT NULL AUTO_INCREMENT ,
 	`timestamp` BIGINT NOT NULL ,

@@ -65,7 +65,7 @@ This backend currently supports the following metrics :
 * Gauges
 * Timers
 
-### Counters ###
+## Counters ##
 
 Counters are properties whose value always increment. 
 
@@ -74,21 +74,21 @@ This means that you have the counter's value history in your database and you ca
 
 They are never reset to zero, so if you want to start over, you need a new counter name.
 
-#### Counters Data Structure ####
+### Counters Data Structure ###
 
 By default, counters values are stored into a `counters_statistics` table.  
 
 This table has a very simple structure with 3 columns :
 
 * `timestamp`: The timestamp sent by statsd flush event.
-* `name`: The counter name.
-* `value`: The counter value.
+* `name`: The counter's name.
+* `value`: The counter's value.
 
 The primary key is a composed of fields: `timestamp` and `name`. 
 
 The counter's new value is calculated on insert for each flush event.
 
-### Gauges ###
+## Gauges ##
 
 Gauges are properties whose value changes with time. 
 
@@ -105,8 +105,8 @@ By default, gauges values are stored into a `gauges_statistics` table.
 This table has a very simple structure with 3 columns :
 
 * `timestamp`: The timestamp sent by statsd flush event.
-* `name`: The gauge name.
-* `value`: The gauge value.
+* `name`: The gauge's name.
+* `value`: The gauge's value.
 
 The primary key is a composed of fields: `timestamp` and `name`. 
 
@@ -124,10 +124,28 @@ myGauge:5|g
 ```
 the value that will be stored for this flush interval for your gauge 'myGauge' will be : `5`
 
-### Timers ###
+## Timers ##
 
-Work in progress
+Timers are properties that record a time duration for an event.
 
+Each timer key has a list of values that were recieved during a flush interval.
+This Backend does not compute the raw data received, it is up to the displaying frontend to do the calculation if needed.
+
+Meaning that if the flush interval is set to 10 seconds and you send 5 different values for the same timer between two flushes,
+you will have 5 database rows with the same (`key`,`timestamp`).
+
+You will then be able to compute the Xth percentile for the treshold that you want, the stadard dev, the mean, min and max values from the raw data.
+
+### Timers Data Structure ###
+
+By default, timers values are stored into a `timers_statistics` table. 
+
+This table has a very simple structure with 3 columns :
+
+* `id` : Auto-incremeted primary key
+* `timestamp`: The timestamp sent by statsd flush event.
+* `name`: The timer's name.
+* `value`: The timer's value.
 
 ## Not implemented yet ##
 
@@ -136,9 +154,9 @@ This is a list of statsd stuff that don't _yet_ work with this backend :
 * sets
 
 
-## Customize MySQL Backend Database
+## Customizing MySQL Backend Database ##
 
-If you want to change where statsd datas are stored just follow the guide :)
+If you want to change the table name or structure to suit your particular needs, just follow the guide :)
 
 By default database tables are defined like that :
 ````js
@@ -150,9 +168,9 @@ By default database tables are defined like that :
 }
 ```
 
-If we want to duplicate statsd counters datas into a new table called 'duplicate_counters_stats', we have to add new table name to counters tables list.
+If we want to duplicate statsd counters datas into a new table called 'duplicate_counters_stats', we have to add a new table name to counters tables list.
 
-Open stats config file and add tables configuration :
+Open statsd config file, go to the mysql section and add tables configuration :
 ```
 mysql: { 
    host: "localhost", 
@@ -168,66 +186,54 @@ mysql: {
 }
 ```
 
-Then place new table creation script into "nodejs-statsd-mysql-backend/tables" directory.
+Then place a new SQL script creating this new table in the "nodejs-statsd-mysql-backend/tables" directory.
 The file should be nammed "[table_name].sql", so create a file named 'duplicate_counters_stats.sql'.
 
-Example of creation script 'duplicate_counters_stats.sql' :
+Example SQL script 'duplicate_counters_stats.sql' :
 ```sql
 -- Stadard DELIMITER is $$
 
--- Counters statistics table
+-- Duplicate Counters statistics table
 CREATE  TABLE `statsd_db`.`duplicate_counters_stats` (
     `timestamp` BIGINT NOT NULL ,
     `name` VARCHAR(255) NOT NULL ,
     `value` INT(11) NOT NULL ,
 PRIMARY KEY (`name`, `timestamp`) )$$
-
--- Procedure used to calculate values sum for the same userKey name
-CREATE FUNCTION `duplicate_counters_get_max`(_name VARCHAR(255)) RETURNS INT(11)
-READS SQL DATA
-BEGIN 
-      DECLARE r INT;
-      SELECT  MAX(`value`)
-      INTO    r
-      FROM    `statsd_db`.`duplicate_counters_stats`
-      WHERE   name = _name;
-      
-      RETURN IF(r IS NULL, 0, r);
-END$$
 ```
 
-The last step is the modification of the Counters Query Engine. We can also create a new Query Engine but we will see how to do that in the next section.
+The last step is the modification of the Counters Query Engine. 
+
+We could create a new Query Engine but we will see how to do that in the next section.
 
 Open the file "nodejs-statsd-mysql-backend/engines/countersEngine.js".
 
 We will focus on a specific line of this file :
 ```js
-querries.push("insert into `counters_statistics` values ("+time_stamp+", '"+userCounterName+"', counters_get_max(name) + "+counterValue+");");
+querries.push("insert into `counters_statistics` select "+time_stamp+", '"+userCounterName+"' , if(max(value),max(value),0) + "+counterValue+"  from `counters_statistics`  where if(name = '"+userCounterName+"', 1,0) = 1 ;");
 ```
 
 Just duplicate this line and change the table name :
 ```js
-querries.push("insert into `counters_statistics` values ("+time_stamp+", '"+userCounterName+"', counters_get_max(name) + "+counterValue+");");
-querries.push("insert into `duplicate_counters_stats` values ("+time_stamp+", '"+userCounterName+"', duplicate_counters_get_max(name) + "+counterValue+");");
+querries.push("insert into `counters_statistics` select "+time_stamp+", '"+userCounterName+"' , if(max(value),max(value),0) + "+counterValue+"  from `counters_statistics`  where if(name = '"+userCounterName+"', 1,0) = 1 ;");
+querries.push("insert into `duplicate_counters_stats` select "+time_stamp+", '"+userCounterName+"' , if(max(value),max(value),0) + "+counterValue+"  from `duplicate_counters_stats`  where if(name = '"+userCounterName+"', 1,0) = 1 ;");
 ```
 
-Values will be inserted in two tables: 'counters_statistics' and 'duplicate_counters_stats'.
+Your values will be inserted in the two tables: 'counters_statistics' and 'duplicate_counters_stats'.
 
 In this example, colums are the same in the two tables so, we just have to change the table name.
 
-But you can customize this...
+But you can do anything with this...
 
 
-## Customize MySQL Backend Query Engines
+## Customizing MySQL Backend Query Engines ##
 
-If you want to add customized querry engines to MySQL Backend, it's very simple.
+If you want to add customized querry engines to MySQL Backend, it's pretty easy.
 
 First, create a new engine in "nodejs-statsd-mysql-backend/engines" directory.
 For example, copy the existing "countersEngine.js" and rename it into "customizedCountersEngine.js".
 
-Make some modifications inside it...
+Modify the new "customizedCountersEngine.js" to suit your needs and declare your new engine in MySQL Backend configuration.
 
-Then, declare the new engine in MySQL Backend configuration.
 Open statsd config file and add engines configuration:
 
 ```js
@@ -251,4 +257,4 @@ mysql: {
 
 ```
 
-Your querry engine will be triggered for each new Counter data.
+Your querry engine will be triggered on each flush for each new counter.
