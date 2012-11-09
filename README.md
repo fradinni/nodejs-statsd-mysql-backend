@@ -5,10 +5,16 @@ MySQL backend for [Statsd](https://github.com/etsy/statsd) by [Etsy](http://www.
 
 Current version 0.1.0-alpha1
 
-## Contributors
+## Contributors ##
 This statsd backend is developped by [Nicolas FRADIN](http://www.nfradin.fr) and [Damien PACAUD](http://www.damien-pacaud.com).
 
-## Install
+## Tutorials ##
+
+You will find a tutorial explaining how to use this Mysql backend here :
+* [French Version](http://www.nfradin.fr/fr/nodejs-statsd-mysql-enregistrez-propres-statistiques-pour-votre-siteapplication.html/)
+* [English Version](http://www.nfradin.fr/en/nodejs-statsd-mysql-enregistrez-propres-statistiques-pour-votre-siteapplication.html/)
+
+## Install ##
 Go into Statsd parent directory and execute :
 ```bash
 git clone https://github.com/fradinni/nodejs-statsd-mysql-backend.git
