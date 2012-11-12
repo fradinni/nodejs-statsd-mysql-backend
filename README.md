@@ -73,9 +73,9 @@ This backend currently supports the following metrics :
 
 ## Counters ##
 
-Counters are properties whose value always increment. 
+Counters are properties whose value increment or decrement. 
 
-They consist of a Key-Value pair and are stored in database every flush interval if they were incremented.
+They consist of a Key-Value pair and are stored in database every flush interval if they were incremented or decremented.
 This means that you have the counter's value history in your database and you can easily focus on the time window that you need (to show growth for instance).
 
 They are never reset to zero, so if you want to start over, you need a new counter name.
