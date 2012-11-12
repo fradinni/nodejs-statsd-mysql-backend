@@ -65,7 +65,7 @@ function StatdMySQLBackend(startupTime, config, emitter) {
 
   //Default tables
   if(!this.config.tables) {
-    this.config.tables = {counters: ["counters_statistics"], gauges: ["gauges_statistics"], timers:["timers_statistics"]};
+    this.config.tables = {counters: ["counters_statistics"], gauges: ["gauges_statistics"], timers:["timers_statistics"],sets:["sets_statistics"]};
   }
 
   // Default engines
@@ -74,7 +74,7 @@ function StatdMySQLBackend(startupTime, config, emitter) {
       counters: ["engines/countersEngine.js"],
       gauges: ["engines/gaugesEngine.js"],
       timers: ["engines/timersEngine.js"],
-      sets: []
+      sets: ["engines/setsEngine.js"]
     };
   }
   
@@ -346,7 +346,7 @@ StatdMySQLBackend.prototype.onFlush = function(time_stamp, metrics) {
   var sets = metrics['sets'];
   var pctThreshold = metrics['pctThreshold'];
 
-  console.log("METRICS : \n " + util.inspect(metrics) + "\n ===========================");
+  //console.log("METRICS : \n " + util.inspect(metrics) + "\n ===========================");
 
   // Handle statsd counters
   self.handleCounters(counters,time_stamp);
@@ -356,6 +356,9 @@ StatdMySQLBackend.prototype.onFlush = function(time_stamp, metrics) {
   
   // Handle statsd timers
   self.handleTimers(timers,time_stamp);
+  
+  // Handle stastd sets
+  self.handleSets(sets,time_stamp);
 
 }
 
@@ -485,7 +488,6 @@ StatdMySQLBackend.prototype.handleGauges = function(_gauges, time_stamp) {
  * @param _timers received timers
  * @param time_stamp flush time_stamp 
  */
- //TODO : à implémenter
 StatdMySQLBackend.prototype.handleTimers = function(_timers, time_stamp) {
   var self = this;
   
@@ -533,6 +535,61 @@ StatdMySQLBackend.prototype.handleTimers = function(_timers, time_stamp) {
     self.closeMySqlConnection();
   }
 }
+
+/**
+ * Handle and process received sets 
+ * 
+ * @param _sets received sets
+ * @param time_stamp flush time_stamp 
+ */
+StatdMySQLBackend.prototype.handleSets = function(_sets, time_stamp) {
+  var self = this;
+  
+  var setsSize = 0
+  for(var s in _sets) { setsSize++; }
+
+  // If timers received
+  if(setsSize > 0) {
+    console.log("sets received !");
+    console.log("Sets = " + util.inspect(_sets));
+    var querries = [];
+
+    // Open MySQL connection
+    var canExecuteQuerries = self.openMySqlConnection();
+    if(canExecuteQuerries) {
+        //////////////////////////////////////////////////////////////////////
+        // Call buildQuerries method on each counterEngine
+        for(var setsEngineIndex in self.engines.sets) {
+          console.log("setsEngineIndex = " + setsEngineIndex);
+          var setsEngine = self.engines.sets[setsEngineIndex];
+
+          // Add current engine querries to querries list
+          var engineQuerries = setsEngine.buildQuerries(_sets, time_stamp);
+          querries = querries.concat(engineQuerries);
+
+          // Insert data into database every 100 query
+          if(querries.length >= 100) {
+            // Execute querries
+            self.executeQuerries(querries);
+            querries = [];
+          }
+
+        }
+
+        if(querries.length > 0) {
+          // Execute querries
+          self.executeQuerries(querries);
+          querries = [];
+        }
+    } else {
+      console.log("Unable to open db connection !");
+    }
+
+    // Close MySQL Connection
+    self.closeMySqlConnection();
+  }
+}
+
 
 /**
  * MISSING DOCUMENTATION 
