@@ -5,6 +5,9 @@ MySQL backend for [Statsd](https://github.com/etsy/statsd) by [Etsy](http://www.
 
 Current version 0.1.0-alpha1
 
+## License ##
+The node-js-mysql-backend library is licensed under the MIT license. Copyright (c) 2012-2013 Nicolas FRADIN. All rights reserved.
+
 ## Contributors ##
 This statsd backend is developped by [Nicolas FRADIN](http://www.nfradin.fr) and [Damien PACAUD](http://www.damien-pacaud.com).
 
