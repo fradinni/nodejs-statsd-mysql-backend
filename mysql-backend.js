@@ -10,7 +10,7 @@
 var _mysql = require('mysql'),
     util = require('util'),
     fs = require('fs'),
-    sequence = require('sequence').Sequence().create();
+    sequence = require('sequence').Sequence.create();
 
 var STATSD_PACKETS_RECEIVED = "statsd.packets_received";
 var STATSD_BAD_LINES = "statsd.bad_lines_seen";
