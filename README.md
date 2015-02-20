@@ -24,6 +24,12 @@ git clone https://github.com/fradinni/nodejs-statsd-mysql-backend.git
 ```
 You should have a new directory called 'nodejs-statsd-mysql-backend' just next to the Statsd directory.
 
+It could be required to execute the next commands:
+```
+npm install mysql
+npm install sequence
+```
+
 ## Configuration
 Edit Statsd configuraton file and add mysql-backend configuration.
 
